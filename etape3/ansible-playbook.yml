@@ -1,0 +1,56 @@
+---
+- name: Install Docker on EC2 instances
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Set up the stable Docker repository
+      apt_repository:
+        repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable'
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Deploy Docker Containers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Pull nginx image from Docker Hub
+      docker_image:
+        name: nginx
+        source: pull
+
+    - name: Run an Nginx container
+      docker_container:
+        name: nginx-container
+        image: nginx
+        state: started
+        ports:
+          - "80:80"
+        restart_policy: always
